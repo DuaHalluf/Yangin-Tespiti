@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FireGuard — Yangın Tespiti</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+:root{
+  --bg:#f4f5f7;--surface:#ffffff;--surface2:#f8f9fb;
+  --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.15);
+  --text:#1a1d23;--text2:#5a6478;--text3:#9aa3b2;
+  --red:#e03e2d;--red-dim:rgba(224,62,45,0.10);--red-glow:rgba(224,62,45,0.20);
+  --orange:#d97706;--orange-dim:rgba(217,119,6,0.10);
+  --blue:#2563eb;--blue-dim:rgba(37,99,235,0.10);
+  --green:#16a34a;--green-dim:rgba(22,163,74,0.10);
+  --font:'DM Sans',-apple-system,sans-serif;--mono:'Space Mono','Courier New',monospace;
+  --r:10px;--r-sm:6px;--sidebar:56px;--topbar:56px;
+  --transition:all 0.2s cubic-bezier(0.4,0,0.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;overflow:hidden}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+
+#app{display:flex;height:100vh}
+
+.sidebar{width:var(--sidebar);background:#1e2433;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;z-index:100;flex-shrink:0}
+.sidebar-logo{width:34px;height:34px;background:#e03e2d;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 0 20px var(--red-glow)}
+.sidebar-logo i{color:#fff;font-size:18px}
+.nav-btn{width:38px;height:38px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#6b7a99;border:none;background:none;transition:var(--transition);position:relative}
+.nav-btn:hover{color:#c8d0e0;background:rgba(255,255,255,0.08)}
+.nav-btn.active{color:#ff6b5b;background:rgba(224,62,45,0.18)}
+.nav-btn i{font-size:18px}
+.nav-btn .tip{position:absolute;left:52px;background:#2d3748;color:#fff;font-size:12px;padding:4px 10px;border-radius:var(--r-sm);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:200}
+.nav-btn:hover .tip{opacity:1}
+.sidebar-spacer{flex:1}
+.sidebar-avatar{width:30px;height:30px;border-radius:50%;background:#2d3748;border:1.5px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#c8d0e0;cursor:pointer;margin-top:8px}
+
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:var(--topbar);background:#fff;border-bottom:0.5px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0}
+.topbar-title h1{font-size:16px;font-weight:600}
+.topbar-title p{font-size:11px;color:var(--text3);margin-top:1px}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.badge-live{display:flex;align-items:center;gap:5px;background:var(--green-dim);border:0.5px solid rgba(46,204,113,0.25);color:var(--green);font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.topbar-btn{width:32px;height:32px;background:#f4f5f7;border:0.5px solid var(--border);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);transition:var(--transition)}
+.topbar-btn i{font-size:16px}
+
+.page{flex:1;overflow-y:auto;display:none}
+.page.active{display:block}
+.page-inner{padding:20px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page.active .page-inner{animation:fadeIn .25s ease}
+
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.stat-card{border-radius:var(--r);padding:16px;border:0.5px solid;cursor:pointer;transition:var(--transition);position:relative;overflow:hidden}
+.stat-card:hover{transform:translateY(-1px)}
+.stat-card.red{background:#e03e2d;border-color:#c73521}
+.stat-card.orange{background:#f59e0b;border-color:#d97706}
+.stat-card.blue{background:#2563eb;border-color:#1d4ed8}
+.stat-card.green{background:#16a34a;border-color:#15803d}
+.stat-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.stat-label{font-size:12px;font-weight:500;color:rgba(255,255,255,0.85)}
+.stat-icon{font-size:18px;opacity:0.6;color:rgba(255,255,255,0.7)}
+.stat-num{font-size:32px;font-weight:600;font-family:var(--mono);color:#fff}
+.stat-sub{font-size:11px;color:rgba(255,255,255,0.7);margin-top:4px}
+
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.chart-card{background:#fff;border:0.5px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.chart-card h3{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:14px}
+.bar-chart{display:flex;align-items:flex-end;gap:8px;height:100px}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.bar-fill{width:100%;border-radius:4px 4px 0 0}
+.bar-lbl{font-size:10px;color:var(--text3);font-family:var(--mono)}
+.donut-wrap{display:flex;align-items:center;justify-content:center;gap:20px}
+.donut{position:relative;width:90px;height:90px}
+.donut svg{width:90px;height:90px;transform:rotate(-90deg)}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.donut-center .dn{font-size:18px;font-weight:700;font-family:var(--mono)}
+.donut-center .dl{font-size:10px;color:var(--text3)}
+.donut-legend{display:flex;flex-direction:column;gap:4px}
+.dl-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)}
+.dl-dot{width:8px;height:8px;border-radius:2px}
+
+.table-wrap{background:#fff;border:0.5px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+table{width:100%;border-collapse:collapse}
+thead th{padding:10px 16px;text-align:left;font-size:11px;font-weight:500;color:var(--text3);border-bottom:0.5px solid var(--border);background:#f8f9fb;letter-spacing:.05em;text-transform:uppercase}
+tbody tr{border-bottom:0.5px solid var(--border);cursor:pointer;transition:background .12s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#f8faff}
+tbody td{padding:11px 16px}
+.td-id{font-family:var(--mono);font-size:12px;color:var(--text3)}
+.td-time .t1{font-size:13px;font-weight:500}
+.td-time .t2{font-size:11px;color:var(--text3)}
+
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;border:0.5px solid}
+.pill .dot{width:5px;height:5px;border-radius:50%}
+.pill-fire{background:var(--red-dim);border-color:rgba(231,76,60,0.3);color:#e87070}
+.pill-fire .dot{background:var(--red)}
+.pill-smoke{background:var(--blue-dim);border-color:rgba(52,152,219,0.3);color:#70a8e8}
+.pill-smoke .dot{background:var(--blue)}
+.pill-safe{background:var(--green-dim);border-color:rgba(46,204,113,0.3);color:#70e8a8}
+.pill-safe .dot{background:var(--green)}
+.pill-warn{background:var(--orange-dim);border-color:rgba(230,126,34,0.3);color:#e8a070}
+.pill-warn .dot{background:var(--orange)}
+.src-tag{font-size:11px;font-family:var(--mono);color:var(--text3);background:var(--surface2);border:0.5px solid var(--border);padding:2px 7px;border-radius:4px}
+
+.conf-wrap{display:flex;align-items:center;gap:8px}
+.conf-bar{height:3px;border-radius:2px;background:var(--bg4,#eef0f3);width:60px}
+.conf-fill{height:100%;border-radius:2px}
+.conf-txt{font-size:12px;font-family:var(--mono);color:var(--text2);min-width:34px}
+
+.act-btn{width:28px;height:28px;background:none;border:0.5px solid var(--border);border-radius:var(--r-sm);color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
+.act-btn:hover{border-color:var(--border2);color:var(--text);background:var(--surface2)}
+.act-btn i{font-size:14px}
+
+.pagination{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border-top:0.5px solid var(--border)}
+.pag-btn{width:28px;height:28px;background:#f4f5f7;border:0.5px solid var(--border);border-radius:var(--r-sm);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition);font-size:13px}
+.pag-info{font-size:12px;color:var(--text3);font-family:var(--mono)}
+
+.section-title{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.section-title i{color:var(--text3);font-size:15px}
+
+/* LOGIN */
+.login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f4f5f7;position:relative;overflow:hidden}
+.login-bg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 600px 400px at 20% 50%,rgba(224,62,45,0.05) 0%,transparent 70%),radial-gradient(ellipse 400px 600px at 80% 30%,rgba(37,99,235,0.04) 0%,transparent 70%)}
+.login-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,0,0,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
+.login-card{position:relative;z-index:2;width:380px;background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:16px;padding:36px;box-shadow:0 20px 60px rgba(0,0,0,0.15)}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.login-logo-icon{width:38px;height:38px;background:var(--red);border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px var(--red-glow)}
+.login-logo-icon i{color:#fff;font-size:20px}
+.login-logo-text h2{font-size:16px;font-weight:600}
+.login-logo-text p{font-size:11px;color:var(--text3)}
+.login-tabs{display:flex;gap:4px;background:#f4f5f7;border-radius:var(--r-sm);padding:3px;margin-bottom:24px}
+.login-tab{flex:1;padding:7px;text-align:center;font-size:13px;font-weight:500;border-radius:5px;cursor:pointer;color:var(--text3);transition:var(--transition);border:none;background:none}
+.login-tab.active{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:500}
+.field input{width:100%;background:#f8f9fb;border:1px solid #e2e8f0;border-radius:var(--r-sm);padding:10px 12px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;transition:var(--transition)}
+.field input:focus{border-color:var(--red);box-shadow:0 0 0 2px var(--red-dim)}
+.btn-primary{width:100%;padding:11px;background:var(--red);border:none;border-radius:var(--r-sm);color:#fff;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;transition:var(--transition);box-shadow:0 4px 16px var(--red-glow);margin-top:6px}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+.login-footer{text-align:center;margin-top:20px;font-size:11px;color:var(--text3)}
+.alert-msg{padding:10px 12px;border-radius:var(--r-sm);font-size:12px;margin-bottom:12px;display:none}
+.alert-error{background:var(--red-dim);border:0.5px solid rgba(231,76,60,0.3);color:#e87070}
+.alert-success{background:var(--green-dim);border:0.5px solid rgba(46,204,113,0.3);color:#70e8a8}
+
+/* CAMERA/TESPIT */
+.camera-area{display:grid;grid-template-columns:1fr 280px;gap:14px}
+.camera-feed{background:#fff;border:0.5px solid var(--border);border-radius:var(--r);aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.camera-placeholder{text-align:center;position:relative;z-index:1}
+.camera-placeholder i{font-size:48px;color:var(--text3);display:block;margin-bottom:10px}
+.camera-placeholder p{font-size:13px;color:var(--text3)}
+.camera-controls{display:flex;flex-direction:column;gap:10px}
+.ctrl-card{background:#fff;border:0.5px solid var(--border);border-radius:var(--r);padding:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.ctrl-card h4{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+.start-btn{width:100%;padding:10px;background:var(--red);border:none;border-radius:var(--r-sm);color:#fff;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:var(--transition);display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px var(--red-glow)}
+.start-btn:hover{opacity:.9}
+.danger-btn{width:100%;padding:9px;background:var(--red-dim);border:0.5px solid rgba(231,76,60,0.3);border-radius:var(--r-sm);color:var(--red);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:var(--transition)}
+.danger-btn:hover{background:rgba(231,76,60,0.2)}
+
+.upload-zone{background:#fff;border:1.5px dashed #cbd5e1;border-radius:var(--r);min-height:260px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--transition);position:relative;overflow:hidden}
+.upload-zone:hover{border-color:#e03e2d;background:#fff8f7}
+
+.mode-tab{display:flex;align-items:center;gap:6px;padding:8px 16px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r-sm);color:var(--text3);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:var(--transition)}
+.mode-tab:hover{color:var(--text2);border-color:var(--border2)}
+.mode-tab.active{background:var(--red-dim);border-color:rgba(231,76,60,0.3);color:var(--red)}
+.mode-tab i{font-size:15px}
+
+.slider-field{margin-bottom:14px}
+.slider-field label{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:6px}
+.slider-field label span{font-family:var(--mono);color:var(--red)}
+input[type=range]{width:100%;height:3px;-webkit-appearance:none;background:#eef0f3;border-radius:2px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--red);cursor:pointer;box-shadow:0 0 8px var(--red-glow)}
+
+.result-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:14px 16px}
+
+/* ADMIN */
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.admin-card{background:#fff;border:0.5px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.admin-card h3{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.user-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)}
+.user-row:last-child{border-bottom:none}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:#eef0f3;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--text2);flex-shrink:0}
+.user-info{flex:1}
+.user-name{font-size:13px;font-weight:500}
+.user-email{font-size:11px;color:var(--text3)}
+.role-badge{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:500}
+.role-admin{background:var(--red-dim);color:#e87070;border:0.5px solid rgba(231,76,60,0.2)}
+.role-user{background:#eef0f3;color:var(--text3);border:0.5px solid var(--border)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:999}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:14px;padding:24px;width:480px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.modal-header h3{font-size:15px;font-weight:600}
+.modal-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px}
+.modal-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border);font-size:13px}
+.modal-row:last-child{border-bottom:none}
+.modal-row .key{color:var(--text3)}
+.modal-row .val{font-weight:500;font-family:var(--mono);font-size:12px}
+
+/* FILTER */
+.filter-bar{background:#fff;border:0.5px solid var(--border);border-radius:var(--r);padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.search-wrap{flex:1;display:flex;align-items:center;gap:8px;background:#f4f5f7;border:0.5px solid var(--border);border-radius:var(--r-sm);padding:7px 12px}
+.search-wrap i{color:var(--text3);font-size:14px}
+.search-wrap input{border:none;background:transparent;color:var(--text);font-family:var(--font);font-size:13px;outline:none;width:100%}
+.search-wrap input::placeholder{color:var(--text3)}
+.filter-select{background:#f4f5f7;border:0.5px solid var(--border);border-radius:var(--r-sm);color:var(--text2);font-family:var(--font);font-size:12px;padding:7px 10px;cursor:pointer;outline:none}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-page" id="loginPage">
+  <div class="login-bg"></div>
+  <div class="login-grid"></div>
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon"><i class="ti ti-flame"></i></div>
+      <div class="login-logo-text"><h2>FireGuard</h2><p>Yangın ve Duman Tespiti</p></div>
+    </div>
+    <div class="login-tabs">
+      <button class="login-tab active" onclick="switchTab('login')">Giriş Yap</button>
+      <button class="login-tab" onclick="switchTab('register')">Kayıt Ol</button>
+    </div>
+    <div id="loginForm">
+      <div class="alert-msg alert-error" id="loginError"></div>
+      <div class="field"><label>E-posta</label><input type="email" id="loginEmail" placeholder="email@example.com"></div>
+      <div class="field"><label>Şifre</label><input type="password" id="loginPass" placeholder="••••••••"></div>
+      <button class="btn-primary" onclick="doLogin()">Giriş Yap</button>
+    </div>
+    <div id="registerForm" style="display:none">
+      <div class="alert-msg alert-error" id="regError"></div>
+      <div class="alert-msg alert-success" id="regSuccess"></div>
+      <div class="field"><label>Ad Soyad</label><input type="text" id="regName" placeholder="Adınızı girin"></div>
+      <div class="field"><label>E-posta</label><input type="email" id="regEmail" placeholder="email@example.com"></div>
+      <div class="field"><label>Şifre</label><input type="password" id="regPass" placeholder="Şifre belirleyin"></div>
+      <div class="field"><label>Şifre Tekrar</label><input type="password" id="regPass2" placeholder="Şifreyi tekrar girin"></div>
+      <button class="btn-primary" onclick="doRegister()">Hesap Oluştur</button>
+    </div>
+    <div class="login-footer">Sakarya Üniversitesi — Bitirme Projesi 2026<br>Loubana ALMLHEM &amp; Dua HALLUF EDİB</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <div class="sidebar">
+    <div class="sidebar-logo"><i class="ti ti-flame"></i></div>
+    <div class="sidebar-avatar" id="userAvatar">?</div>
+    <div style="width:32px;height:1px;background:rgba(255,255,255,0.08);margin:6px 0"></div>
+    <button class="nav-btn active" onclick="goPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i><span class="tip">Dashboard</span></button>
+    <button class="nav-btn" onclick="goPage('camera',this)"><i class="ti ti-camera"></i><span class="tip">Tespit</span></button>
+    <button class="nav-btn" onclick="goPage('history',this)"><i class="ti ti-history"></i><span class="tip">Geçmiş</span></button>
+    <button class="nav-btn" onclick="goPage('stats',this)"><i class="ti ti-chart-bar"></i><span class="tip">İstatistikler</span></button>
+    <button class="nav-btn" onclick="goPage('notifications',this)"><i class="ti ti-bell"></i><span class="tip">Bildirimler</span></button>
+    <button class="nav-btn" onclick="goPage('messages',this)"><i class="ti ti-message-dots"></i><span class="tip">Mesajlar</span></button>
+    <button class="nav-btn" id="adminNavBtn" style="display:none" onclick="goPage('admin',this)"><i class="ti ti-shield"></i><span class="tip">Admin</span></button>
+    <div class="sidebar-spacer"></div>
+    <button class="nav-btn" onclick="goPage('settings',this)"><i class="ti ti-settings"></i><span class="tip">Ayarlar</span></button>
+    <button class="nav-btn" style="color:#e03e2d" onclick="doLogout()"><i class="ti ti-logout"></i><span class="tip">Çıkış</span></button>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title"><h1 id="pageTitle">Dashboard</h1><p id="pageSubtitle">Genel Bakış</p></div>
+      <div class="topbar-right">
+        <div class="badge-live"><span class="pulse"></span> Canlı</div>
+        <div class="topbar-btn"><i class="ti ti-bell"></i></div>
+        <div class="topbar-btn" onclick="toggleAyarlar()"><i class="ti ti-settings"></i></div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-inner">
+        <div class="stat-grid">
+          <div class="stat-card red"><div class="stat-top"><span class="stat-label">Yangın</span><i class="ti ti-flame stat-icon"></i></div><div class="stat-num" id="s-fire">0</div><div class="stat-sub">Toplam tespit</div></div>
+          <div class="stat-card orange"><div class="stat-top"><span class="stat-label">Yüksek Güven</span><i class="ti ti-alert-triangle stat-icon"></i></div><div class="stat-num" id="s-high">0</div><div class="stat-sub">%80 üzeri</div></div>
+          <div class="stat-card blue"><div class="stat-top"><span class="stat-label">Duman</span><i class="ti ti-wind stat-icon"></i></div><div class="stat-num" id="s-smoke">0</div><div class="stat-sub">Toplam tespit</div></div>
+          <div class="stat-card green"><div class="stat-top"><span class="stat-label">Güvenli</span><i class="ti ti-circle-check stat-icon"></i></div><div class="stat-num" id="s-safe">0</div><div class="stat-sub">Temiz tespit</div></div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-card"><h3><i class="ti ti-chart-bar" style="font-size:14px;margin-right:4px"></i> Son 7 Gün</h3><div class="bar-chart" id="barChart"></div></div>
+          <div class="chart-card"><h3><i class="ti ti-chart-pie" style="font-size:14px;margin-right:4px"></i> Dağılım</h3>
+            <div class="donut-wrap">
+              <div class="donut"><svg viewBox="0 0 90 90"><circle cx="45" cy="45" r="32" fill="none" stroke="#f0f0f0" stroke-width="10"/><circle cx="45" cy="45" r="32" fill="none" stroke="#e74c3c" stroke-width="10" stroke-dasharray="100 201" stroke-linecap="round"/><circle cx="45" cy="45" r="32" fill="none" stroke="#3498db" stroke-width="10" stroke-dasharray="54 247" stroke-dashoffset="-100" stroke-linecap="round"/><circle cx="45" cy="45" r="32" fill="none" stroke="#2ecc71" stroke-width="10" stroke-dasharray="47 254" stroke-dashoffset="-154" stroke-linecap="round"/></svg><div class="donut-center"><span class="dn" id="donutTotal">0</span><span class="dl">Toplam</span></div></div>
+              <div class="donut-legend"><div class="dl-item"><div class="dl-dot" style="background:#e74c3c"></div><span id="lgFire">Yangın — 0</span></div><div class="dl-item"><div class="dl-dot" style="background:#3498db"></div><span id="lgSmoke">Duman — 0</span></div><div class="dl-item"><div class="dl-dot" style="background:#2ecc71"></div><span id="lgSafe">Güvenli — 0</span></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="section-title"><i class="ti ti-clock"></i> Son Tespitler</div>
+        <div class="table-wrap"><table><thead><tr><th>ID</th><th>Zaman</th><th>Sınıf</th><th>Kaynak</th><th>Güven</th><th>Durum</th></tr></thead><tbody id="dashTable"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- TESPIT / CAMERA -->
+    <div class="page" id="page-camera">
+      <div class="page-inner">
+        <div style="display:flex;gap:8px;margin-bottom:16px">
+          <button class="mode-tab active" onclick="switchMode('foto',this)"><i class="ti ti-photo"></i> Fotoğraf</button>
+          <button class="mode-tab" onclick="switchMode('video',this)"><i class="ti ti-video"></i> Video</button>
+          <button class="mode-tab" onclick="switchMode('kamera',this)"><i class="ti ti-camera"></i> Canlı Kamera</button>
+        </div>
+
+        <!-- FOTO -->
+        <div id="mode-foto" class="mode-content">
+          <div style="display:flex;flex-direction:column;width:100%">
+            <div style="width:100%">
+              <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r-sm);padding:6px 10px;display:flex;align-items:center;gap:8px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+                  <label onclick="document.getElementById('fotoInput').click()" class="start-btn" style="width:auto;padding:7px 14px;cursor:pointer;font-size:12px"><i class="ti ti-photo"></i> Fotoğraf Seç</label>
+                  <span id="fotoFileName" style="flex:1;font-size:12px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Henüz fotoğraf seçilmedi...</span>
+                  <button class="start-btn" onclick="analyzeFoto()" style="width:auto;padding:7px 14px;font-size:12px"><i class="ti ti-search"></i> Analiz Et</button>
+                  <button onclick="resetFoto()" style="width:30px;height:30px;background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--r-sm);color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px"><i class="ti ti-refresh"></i></button>
+                </div>
+                
+                <div class="upload-zone" id="fotoZone" onclick="document.getElementById('fotoInput').click()">
+                <div id="fotoPlaceholder" style="text-align:center">
+                  <i class="ti ti-cloud-upload" style="font-size:40px;color:var(--text3);display:block;margin-bottom:8px"></i>
+                  <p style="color:var(--text2);font-size:14px;font-weight:500">Fotoğraf yükle</p>
+                  <p style="color:var(--text3);font-size:12px;margin-top:4px">JPG, JPEG, PNG — Maks 10MB</p>
+                </div>
+                <div id="fotoPreviewWrap" style="display:none;width:100%;padding:10px">
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div><p style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase">Yüklenen</p><img id="fotoPreviewImg" style="width:100%;width:100%;border-radius:8px;border:0.5px solid var(--border);display:block"></div>
+                    <div><p style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase">Tespit Sonucu</p><div id="fotoResultImg" style="width:100%;min-height:300px;background:var(--surface2);border-radius:8px;border:0.5px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center"><span style="color:var(--text3);font-size:12px">Analiz bekleniyor...</span></div></div>
+                  </div>
+                </div>
+              </div>
+              <input type="file" id="fotoInput" accept=".jpg,.jpeg,.png" style="display:none" onchange="onFotoSelected(event)">
+              <div id="fotoResult" style="margin-top:12px"></div>
+            </div>
+            <div id="fotoAyarlar" style="display:none;position:fixed;top:60px;right:14px;z-index:500;background:#fff;border:0.5px solid var(--border);border-radius:var(--r);padding:16px;width:260px;box-shadow:0 8px 40px rgba(0,0,0,0.15)">
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <h4 style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Ayarlar</h4>
+                <div style="margin-bottom:4px"><label>Güven Eşiği <span id="fotoConfVal">45%</span></label><input type="range" min="10" max="100" value="45" oninput="document.getElementById('fotoConfVal').textContent=this.value+'%'"></div>
+                
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:8px;cursor:pointer"><input type="checkbox" checked> Sis Filtresi</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:12px;cursor:pointer"><input type="checkbox"> Telegram Bildirimi</label>
+                <button class="start-btn" onclick="analyzeFoto()"><i class="ti ti-search"></i> Analiz Et</button>
+                <button class="danger-btn" style="margin-top:8px" onclick="resetFoto()"><i class="ti ti-refresh"></i> Sıfırla</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIDEO -->
+        <div id="mode-video" class="mode-content" style="display:none">
+          <div class="camera-area">
+            <div>
+              <!-- Video player with canvas overlay -->
+              <div id="vidPlayerWrap" style="display:none;position:relative;background:#000;border-radius:var(--r);overflow:hidden;margin-bottom:12px">
+                <video id="vidPlayer" style="width:100%;display:block" controls></video>
+                <canvas id="vidCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none"></canvas>
+                <div id="vidLabel" style="position:absolute;bottom:50px;left:12px;background:rgba(0,0,0,0.8);border-radius:6px;padding:6px 14px;display:none">
+                  <span id="vidLabelText" style="font-family:monospace;font-size:14px;font-weight:700;color:#fff"></span>
+                </div>
+                <div id="vidLiveIndicator" style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.75);border-radius:20px;padding:4px 12px;display:none;align-items:center;gap:6px">
+                  <span style="width:7px;height:7px;border-radius:50%;background:#ef4444;animation:pulse 1s infinite;display:inline-block"></span>
+                  <span style="font-size:11px;color:#fff;font-weight:600">Canlı Analiz</span>
+                </div>
+              </div>
+              <!-- Upload zone -->
+              <div class="upload-zone" id="vidUploadZone" onclick="document.getElementById('vidInput').click()">
+                <div id="vidPlaceholder" style="text-align:center">
+                  <i class="ti ti-video" style="font-size:40px;color:var(--text3);display:block;margin-bottom:8px"></i>
+                  <p style="color:var(--text2);font-size:14px;font-weight:500">Video yükle veya sürükle</p>
+                  <p style="color:var(--text3);font-size:12px;margin-top:4px">MP4, AVI, MOV — Maks 100MB</p>
+                </div>
+              </div>
+              <input type="file" id="vidInput" accept=".mp4,.avi,.mov" style="display:none" onchange="onVidSelected(event)">
+              <div id="vidResult" style="margin-top:12px"></div>
+            </div>
+            <div class="camera-controls">
+              <div class="ctrl-card">
+                <h4>Video Analiz</h4>
+                <div id="vidFileName" style="font-size:12px;color:var(--text3);margin-bottom:12px;word-break:break-all">Henüz video seçilmedi</div>
+                <button class="start-btn" id="vidAnalyzeBtn" onclick="doAnalyzeVideo()" style="margin-bottom:8px"><i class="ti ti-player-play"></i> Analizi Başlat</button>
+                <button class="danger-btn" onclick="resetVideo()"><i class="ti ti-refresh"></i> Sıfırla</button>
+                <div class="slider-field" style="margin-top:14px"><label>Güven Eşiği <span id="vidConfVal">45%</span></label><input type="range" min="10" max="100" value="45" oninput="document.getElementById('vidConfVal').textContent=this.value+'%'"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- KAMERA -->
+        <div id="mode-kamera" class="mode-content" style="display:none">
+          <div class="camera-area">
+            <div>
+              <div class="camera-feed" id="camFeed">
+                <div class="camera-placeholder" id="camPlaceholder"><i class="ti ti-camera-off"></i><p>Kamera başlatılmadı</p></div>
+                <video id="camVideo" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:var(--r)" autoplay muted></video>
+              </div>
+            </div>
+            <div class="camera-controls">
+              <div class="ctrl-card">
+                <h4>Kontrol</h4>
+                <button class="start-btn" id="camBtn" onclick="toggleCamera()" style="margin-bottom:10px"><i class="ti ti-player-play"></i> Kamerayı Başlat</button>
+                <div class="slider-field"><label>Güven Eşiği <span id="camConfVal">45%</span></label><input type="range" min="10" max="100" value="45" oninput="document.getElementById('camConfVal').textContent=this.value+'%'"></div>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:6px;cursor:pointer"><input type="checkbox" checked> Sis Filtresi</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);cursor:pointer"><input type="checkbox"> Telegram Bildirimi</label>
+              </div>
+              <div class="ctrl-card">
+                <h4>Son Alarm</h4>
+                <div id="camAlarm" style="font-size:12px;color:var(--text3);text-align:center;padding:10px 0"><i class="ti ti-bell-off" style="font-size:24px;display:block;margin-bottom:6px"></i>Alarm yok</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GEÇMİŞ -->
+    <div class="page" id="page-history">
+      <div class="page-inner">
+        <div class="filter-bar">
+          <div class="search-wrap"><i class="ti ti-search"></i><input type="text" placeholder="ID, sınıf veya kaynak ara..." id="histSearch" oninput="filterHistory()"></div>
+          <select class="filter-select" id="histSinif" onchange="filterHistory()"><option value="">Sınıf: Tümü</option><option value="fire">🔥 Yangın</option><option value="smoke">💨 Duman</option><option value="safe">✅ Güvenli</option></select>
+          <select class="filter-select" id="histKaynak" onchange="filterHistory()"><option value="">Kaynak: Tümü</option><option value="kamera">Kamera</option><option value="video">Video</option><option value="fotograf">Fotoğraf</option><option value="api">API</option></select>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+          <div style="background:#fff;border:0.5px solid var(--border);border-radius:var(--r);padding:12px 16px"><div style="font-size:11px;color:var(--text3);text-transform:uppercase;margin-bottom:4px">Toplam</div><div style="font-size:24px;font-weight:600;font-family:var(--mono)" id="hTotal">0</div></div>
+          <div style="background:#fff;border:0.5px solid var(--border);border-radius:var(--r);padding:12px 16px"><div style="font-size:11px;color:var(--text3);text-transform:uppercase;margin-bottom:4px">Yangın</div><div style="font-size:24px;font-weight:600;font-family:var(--mono);color:var(--red)" id="hFire">0</div></div>
+          <div style="background:#fff;border:0.5px solid var(--border);border-radius:var(--r);padding:12px 16px"><div style="font-size:11px;color:var(--text3);text-transform:uppercase;margin-bottom:4px">Duman</div><div style="font-size:24px;font-weight:600;font-family:var(--mono);color:var(--blue)" id="hSmoke">0</div></div>
+          <div style="background:#fff;border:0.5px solid var(--border);border-radius:var(--r);padding:12px 16px"><div style="font-size:11px;color:var(--text3);text-transform:uppercase;margin-bottom:4px">Güvenli</div><div style="font-size:24px;font-weight:600;font-family:var(--mono);color:var(--green)" id="hSafe">0</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 300px;gap:14px">
+          <div class="table-wrap">
+            <table><thead><tr><th>ID</th><th>Zaman</th><th>Sınıf</th><th>Kaynak</th><th>Güven</th><th>Durum</th><th></th></tr></thead><tbody id="histTable"></tbody></table>
+            <div class="pagination"><button class="pag-btn" onclick="changeHistPage(-1)"><i class="ti ti-chevron-left"></i></button><span class="pag-info" id="histPagInfo">Sayfa 1 / 1</span><button class="pag-btn" onclick="changeHistPage(1)"><i class="ti ti-chevron-right"></i></button></div>
+          </div>
+          <div class="chart-card">
+            <h3 style="margin-bottom:10px"><i class="ti ti-photo" style="font-size:14px;margin-right:4px"></i> Tespit Görüntüsü</h3>
+            <select class="filter-select" style="width:100%;margin-bottom:10px" id="histImgSelect" onchange="showHistImg(this.value)"><option value="">ID seçin...</option></select>
+            <div id="histImgArea" style="background:var(--surface2);border-radius:8px;border:0.5px solid var(--border);min-height:160px;display:flex;align-items:center;justify-content:center"><span style="color:var(--text3);font-size:12px">ID seçin</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- İSTATİSTİKLER -->
+    <div class="page" id="page-stats">
+      <div class="page-inner">
+        <div class="stat-grid">
+          <div class="stat-card red"><div class="stat-top"><span class="stat-label">Yangın</span><i class="ti ti-flame stat-icon"></i></div><div class="stat-num" id="st-fire">0</div><div class="stat-sub">Toplam</div></div>
+          <div class="stat-card orange"><div class="stat-top"><span class="stat-label">Ort. Güven</span><i class="ti ti-percentage stat-icon"></i></div><div class="stat-num" id="st-avg">0%</div><div class="stat-sub">Tüm tespitler</div></div>
+          <div class="stat-card blue"><div class="stat-top"><span class="stat-label">Duman</span><i class="ti ti-wind stat-icon"></i></div><div class="stat-num" id="st-smoke">0</div><div class="stat-sub">Toplam</div></div>
+          <div class="stat-card green"><div class="stat-top"><span class="stat-label">Güvenli</span><i class="ti ti-circle-check stat-icon"></i></div><div class="stat-num" id="st-safe">0</div><div class="stat-sub">Temiz</div></div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-card"><h3>Son 7 Gün</h3><div class="bar-chart" id="statsBar"></div></div>
+          <div class="chart-card"><h3>Kaynak Dağılımı</h3><div id="srcDist" style="display:flex;flex-direction:column;gap:4px;margin-top:8px"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BİLDİRİMLER -->
+    <div class="page" id="page-notifications">
+      <div class="page-inner">
+        <div class="section-title"><i class="ti ti-bell"></i> Bildirimler</div>
+        <div id="notifList" style="display:flex;flex-direction:column;gap:4px"></div>
+      </div>
+    </div>
+
+    <!-- MESAJLAR -->
+    <div class="page" id="page-messages">
+      <div class="page-inner">
+        <div class="section-title"><i class="ti ti-message-dots"></i> Telegram Mesajları</div>
+        <div style="background:#fff;border:0.5px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;background:#2196F3;border-radius:10px;display:flex;align-items:center;justify-content:center"><i class="ti ti-brand-telegram" style="color:#fff;font-size:20px"></i></div>
+          <div><div style="font-weight:500;font-size:13px">Telegram Bot Aktif</div><div style="font-size:12px;color:var(--text3)">Her tespitte otomatik bildirim gönderilir</div></div>
+          <div class="badge-live" style="margin-left:auto"><span class="pulse"></span> Bağlı</div>
+        </div>
+        <div id="msgList" style="display:flex;flex-direction:column;gap:4px"></div>
+      </div>
+    </div>
+
+    <!-- AYARLAR -->
+    <div class="page" id="page-settings">
+      <div class="page-inner">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="admin-card"><h3><i class="ti ti-cpu"></i> Model Ayarları</h3>
+            <div class="slider-field"><label>Güven Eşiği <span id="setConfVal">45%</span></label><input type="range" min="10" max="100" value="45" oninput="document.getElementById('setConfVal').textContent=this.value+'%'"></div>
+            <div class="slider-field"><label>IoU Eşiği <span id="setIouVal">40%</span></label><input type="range" min="10" max="100" value="40" oninput="document.getElementById('setIouVal').textContent=this.value+'%'"></div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:8px;cursor:pointer"><input type="checkbox" checked> Sis Filtresi</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:12px;cursor:pointer"><input type="checkbox"> Telegram Bildirimi</label>
+            <button class="start-btn"><i class="ti ti-device-floppy"></i> Kaydet</button>
+          </div>
+          <div class="admin-card"><h3><i class="ti ti-brand-telegram"></i> Telegram</h3>
+            <div class="field"><label>Bot Token</label><input type="text" value="8516296044:AAF5..."></div>
+            <div class="field"><label>Chat ID</label><input type="text" value="7558334990"></div>
+            <button class="start-btn"><i class="ti ti-send"></i> Test Mesajı Gönder</button>
+          </div>
+          <div class="admin-card"><h3><i class="ti ti-info-circle"></i> Sistem Bilgisi</h3>
+            <div class="modal-row"><span class="key">Model</span><span class="val">YOLOv8</span></div>
+            <div class="modal-row"><span class="key">API Portu</span><span class="val">5050</span></div>
+            <div class="modal-row"><span class="key">Veritabanı</span><span class="val">PostgreSQL</span></div>
+            <div class="modal-row"><span class="key">Versiyon</span><span class="val">1.0.0</span></div>
+          </div>
+          <div class="admin-card" style="text-align:center;padding:28px">
+            <div style="width:56px;height:56px;background:var(--red);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px"><i class="ti ti-flame" style="font-size:28px;color:#fff"></i></div>
+            <div style="font-size:16px;font-weight:700">FireGuard</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:4px">Yangın ve Duman Tespiti</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:14px;line-height:2"><b>Loubana ALMLHEM</b><br><b>Dua HALLUF EDİB</b><br>Danışman: Prof. Dr. Cemil ÖZ<br>Sakarya Üniversitesi — 2026</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="page" id="page-admin">
+      <div class="page-inner">
+        <div class="admin-grid">
+          <div class="admin-card"><h3><i class="ti ti-users"></i> Kullanıcı Yönetimi</h3><div id="userList"></div></div>
+          <div class="admin-card"><h3><i class="ti ti-adjustments"></i> Model Ayarları</h3>
+            <div class="slider-field"><label>Güven Eşiği <span id="admConf">45%</span></label><input type="range" min="10" max="100" value="45" oninput="document.getElementById('admConf').textContent=this.value+'%'"></div>
+            <div class="slider-field"><label>IoU Eşiği <span id="admIou">40%</span></label><input type="range" min="10" max="100" value="40" oninput="document.getElementById('admIou').textContent=this.value+'%'"></div>
+            <button class="start-btn" style="margin-bottom:10px"><i class="ti ti-device-floppy"></i> Kaydet</button>
+            <button class="danger-btn"><i class="ti ti-trash"></i> Tüm Kayıtları Sil</button>
+          </div>
+        </div>
+        <div class="section-title"><i class="ti ti-database"></i> Tüm Kayıtlar</div>
+        <div class="table-wrap"><table><thead><tr><th>ID</th><th>Zaman</th><th>Sınıf</th><th>Kaynak</th><th>Güven</th><th>Durum</th><th>İşlem</th></tr></thead><tbody id="adminTable"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <div class="modal-header"><h3>Tespit Detayı</h3><button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:5050';
+const KEY = 'yangin-api-key-2026';
+
+let currentUser = null;
+let cameraStream = null;
+let camInterval = null;
+let uploadedFoto = null;
+let videoFile = null;
+let vidInterval = null;
+let histPage = 1;
+let histFiltered = [];
+const PER_PAGE = 6;
+
+const MOCK = [
+  {id:1041,zaman:'09:32',tarih:'15-05-26',sinif:'fire',kaynak:'kamera',guven:91,durum:'Aktif'},
+  {id:1040,zaman:'09:18',tarih:'15-05-26',sinif:'smoke',kaynak:'video',guven:76,durum:'İnceleniyor'},
+  {id:1039,zaman:'08:55',tarih:'15-05-26',sinif:'fire',kaynak:'api',guven:88,durum:'Aktif'},
+  {id:1038,zaman:'08:30',tarih:'15-05-26',sinif:'smoke',kaynak:'fotograf',guven:62,durum:'Tamamlandı'},
+  {id:1037,zaman:'07:44',tarih:'15-05-26',sinif:'safe',kaynak:'kamera',guven:99,durum:'Tamamlandı'},
+  {id:1036,zaman:'07:10',tarih:'15-05-26',sinif:'fire',kaynak:'video',guven:83,durum:'Aktif'},
+  {id:1035,zaman:'06:52',tarih:'15-05-26',sinif:'smoke',kaynak:'api',guven:71,durum:'İnceleniyor'},
+  {id:1034,zaman:'06:20',tarih:'15-05-26',sinif:'safe',kaynak:'kamera',guven:97,durum:'Tamamlandı'},
+  {id:1033,zaman:'05:45',tarih:'15-05-26',sinif:'fire',kaynak:'fotograf',guven:85,durum:'Aktif'},
+  {id:1032,zaman:'05:10',tarih:'15-05-26',sinif:'smoke',kaynak:'kamera',guven:68,durum:'Tamamlandı'},
+  {id:1031,zaman:'04:33',tarih:'15-05-26',sinif:'safe',kaynak:'video',guven:95,durum:'Tamamlandı'},
+  {id:1030,zaman:'03:55',tarih:'15-05-26',sinif:'fire',kaynak:'api',guven:79,durum:'Aktif'},
+];
+
+const USERS=[{ad:'Admin',email:'admin@fireguard.com',rol:'admin'},{ad:'Loubana ALMLHEM',email:'loubana@uni.edu',rol:'kullanici'},{ad:'Dua HALLUF',email:'dua@uni.edu',rol:'kullanici'}];
+
+// HELPERS
+function pill(s){
+  if(s==='fire') return `<span class="pill pill-fire"><span class="dot"></span>fire</span>`;
+  if(s==='smoke') return `<span class="pill pill-smoke"><span class="dot"></span>smoke</span>`;
+  return `<span class="pill pill-safe"><span class="dot"></span>safe</span>`;
+}
+function durumPill(d){
+  if(d==='Aktif') return `<span class="pill pill-fire">${d}</span>`;
+  if(d==='İnceleniyor') return `<span class="pill pill-warn">${d}</span>`;
+  return `<span class="pill pill-safe">${d}</span>`;
+}
+function confHTML(v){
+  const c=v>=80?'var(--red)':v>=60?'var(--orange)':'var(--blue)';
+  return `<div class="conf-wrap"><div class="conf-bar"><div class="conf-fill" style="width:${v}%;background:${c}"></div></div><span class="conf-txt">${v}%</span></div>`;
+}
+function rowHTML(r,del=false){
+  return `<tr onclick="openModal(${r.id})">
+    <td class="td-id">#${r.id}</td>
+    <td class="td-time"><div class="t1">${r.zaman}</div><div class="t2">${r.tarih}</div></td>
+    <td>${pill(r.sinif)}</td><td><span class="src-tag">${r.kaynak}</span></td>
+    <td>${confHTML(r.guven)}</td><td>${durumPill(r.durum)}</td>
+    <td><button class="act-btn" onclick="event.stopPropagation();${del?`delRow(${r.id})`:`openModal(${r.id})`}"><i class="ti ti-${del?'trash':'eye'}"></i></button></td>
+  </tr>`;
+}
+
+// AUTH
+function switchTab(t){
+  document.querySelectorAll('.login-tab').forEach((b,i)=>b.classList.toggle('active',(t==='login'&&i===0)||(t==='register'&&i===1)));
+  document.getElementById('loginForm').style.display=t==='login'?'block':'none';
+  document.getElementById('registerForm').style.display=t==='register'?'block':'none';
+}
+function doLogin(){
+  const em=document.getElementById('loginEmail').value.trim();
+  const pw=document.getElementById('loginPass').value;
+  const err=document.getElementById('loginError');
+  if(!em||!pw){err.textContent='Lütfen tüm alanları doldurun!';err.style.display='block';return;}
+  err.style.display='none';
+  currentUser=em==='admin@fireguard.com'?{ad:'Admin',email:em,rol:'admin'}:{ad:em.split('@')[0],email:em,rol:'kullanici'};
+  launchApp();
+}
+function doRegister(){
+  const n=document.getElementById('regName').value.trim(),em=document.getElementById('regEmail').value.trim(),p1=document.getElementById('regPass').value,p2=document.getElementById('regPass2').value;
+  const err=document.getElementById('regError'),ok=document.getElementById('regSuccess');
+  err.style.display='none';ok.style.display='none';
+  if(!n||!em||!p1||!p2){err.textContent='Lütfen tüm alanları doldurun!';err.style.display='block';return;}
+  if(p1!==p2){err.textContent='Şifreler eşleşmiyor!';err.style.display='block';return;}
+  ok.textContent='Hesap oluşturuldu! Giriş yapabilirsiniz.';ok.style.display='block';
+  setTimeout(()=>switchTab('login'),1500);
+}
+function doLogout(){
+  currentUser=null;
+  if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
+  if(camInterval){clearInterval(camInterval);camInterval=null;}
+  if(vidInterval){clearInterval(vidInterval);vidInterval=null;}
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginPage').style.display='flex';
+  document.getElementById('adminNavBtn').style.display='none';
+}
+function launchApp(){
+  document.getElementById('loginPage').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('userAvatar').textContent=currentUser.ad.slice(0,2).toUpperCase();
+  if(currentUser.rol==='admin') document.getElementById('adminNavBtn').style.display='flex';
+  renderAll();loadAPIData();
+}
+
+// NAV
+const pageTitles={dashboard:{t:'Dashboard',s:'Genel Bakış'},camera:{t:'Tespit',s:'Fotoğraf, Video, Canlı Kamera'},history:{t:'Geçmiş',s:'Tüm tespit kayıtları'},stats:{t:'İstatistikler',s:'Analiz ve raporlar'},notifications:{t:'Bildirimler',s:'Yangın ve duman uyarıları'},messages:{t:'Mesajlar',s:'Telegram bildirimleri'},settings:{t:'Ayarlar',s:'Sistem yapılandırması'},admin:{t:'Admin Panel',s:'Sistem yönetimi'}};
+function goPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const pg=document.getElementById('page-'+id);
+  if(pg) pg.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const p=pageTitles[id]||{t:id,s:''};
+  document.getElementById('pageTitle').textContent=p.t;
+  document.getElementById('pageSubtitle').textContent=p.s;
+  if(id==='history'){histFiltered=[...MOCK];renderHist();updateHistStats();}
+  if(id==='stats') renderStats();
+  if(id==='admin') renderAdmin();
+  if(id==='notifications') renderNotifs();
+  if(id==='messages') renderMsgs();
+}
+
+// MODE SWITCH
+function switchMode(mode,btn){
+  document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.mode-content').forEach(m=>m.style.display='none');
+  btn.classList.add('active');
+  document.getElementById('mode-'+mode).style.display='block';
+}
+
+// RENDER
+function renderAll(){renderDash();renderBarChart('barChart');histFiltered=[...MOCK];renderHist();updateHistStats();renderUsers();renderAdmin();renderNotifs();renderMsgs();}
+function renderDash(){const t=document.getElementById('dashTable');if(t)t.innerHTML=MOCK.slice(0,5).map(r=>rowHTML(r)).join('');}
+function renderBarChart(id){
+  const days=['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'],vals=[5,8,3,12,7,9,4],max=Math.max(...vals);
+  const el=document.getElementById(id);if(!el)return;
+  el.innerHTML=days.map((d,i)=>{const h=Math.round(vals[i]/max*85),c=vals[i]>=10?'var(--red)':vals[i]>=7?'var(--orange)':'var(--blue)';return`<div class="bar-col"><div class="bar-fill" style="height:${h}px;background:${c};min-height:4px"></div><span class="bar-lbl">${d}</span></div>`;}).join('');
+}
+function renderUsers(){const ul=document.getElementById('userList');if(ul)ul.innerHTML=USERS.map(u=>`<div class="user-row"><div class="user-avatar">${u.ad.split(' ').map(w=>w[0]).join('').slice(0,2)}</div><div class="user-info"><div class="user-name">${u.ad}</div><div class="user-email">${u.email}</div></div><span class="role-badge ${u.rol==='admin'?'role-admin':'role-user'}">${u.rol}</span></div>`).join('');}
+function renderAdmin(){const t=document.getElementById('adminTable');if(t)t.innerHTML=MOCK.map(r=>rowHTML(r,true)).join('');}
+function renderHist(){
+  const start=(histPage-1)*PER_PAGE,slice=histFiltered.slice(start,start+PER_PAGE);
+  const t=document.getElementById('histTable');if(t)t.innerHTML=slice.map(r=>rowHTML(r)).join('');
+  const total=Math.ceil(histFiltered.length/PER_PAGE)||1;
+  const pi=document.getElementById('histPagInfo');if(pi)pi.textContent=`Sayfa ${histPage} / ${total}`;
+  // Populate image select
+  const sel=document.getElementById('histImgSelect');
+  if(sel){sel.innerHTML='<option value="">ID seçin...</option>'+MOCK.map(r=>`<option value="${r.id}">#${r.id} — ${r.sinif} ${r.guven}%</option>`).join('');}
+}
+function changeHistPage(d){const total=Math.ceil(histFiltered.length/PER_PAGE)||1;histPage=Math.max(1,Math.min(total,histPage+d));renderHist();}
+function filterHistory(){
+  const q=document.getElementById('histSearch').value.toLowerCase(),s=document.getElementById('histSinif').value,k=document.getElementById('histKaynak').value;
+  histFiltered=MOCK.filter(r=>(!q||r.sinif.includes(q)||r.kaynak.includes(q)||String(r.id).includes(q))&&(!s||r.sinif===s)&&(!k||r.kaynak===k));
+  histPage=1;renderHist();updateHistStats();
+}
+function updateHistStats(){
+  document.getElementById('hTotal').textContent=histFiltered.length;
+  document.getElementById('hFire').textContent=histFiltered.filter(r=>r.sinif==='fire').length;
+  document.getElementById('hSmoke').textContent=histFiltered.filter(r=>r.sinif==='smoke').length;
+  document.getElementById('hSafe').textContent=histFiltered.filter(r=>r.sinif==='safe').length;
+}
+function showHistImg(id){
+  const area=document.getElementById('histImgArea');
+  if(!id){area.innerHTML='<span style="color:var(--text3);font-size:12px">ID seçin</span>';return;}
+  const r=MOCK.find(x=>x.id==id);if(!r)return;
+  const icon=r.sinif==='fire'?'flame':r.sinif==='smoke'?'wind':'circle-check';
+  const color=r.sinif==='fire'?'var(--red)':r.sinif==='smoke'?'var(--blue)':'var(--green)';
+  area.innerHTML=`<div style="text-align:center;padding:20px"><div style="background:var(--surface2);border-radius:8px;padding:24px;margin-bottom:10px"><i class="ti ti-${icon}" style="font-size:48px;color:${color}"></i></div>${pill(r.sinif)}<div style="font-size:11px;color:var(--text3);margin-top:8px">${r.kaynak} — ${r.zaman}</div></div>`;
+}
+function renderStats(){
+  renderBarChart('statsBar');
+  const fire=MOCK.filter(r=>r.sinif==='fire').length,smoke=MOCK.filter(r=>r.sinif==='smoke').length,safe=MOCK.filter(r=>r.sinif==='safe').length;
+  document.getElementById('st-fire').textContent=fire;
+  document.getElementById('st-smoke').textContent=smoke;
+  document.getElementById('st-safe').textContent=safe;
+  const avg=Math.round(MOCK.reduce((a,r)=>a+r.guven,0)/MOCK.length);
+  document.getElementById('st-avg').textContent=avg+'%';
+  const src=[{l:'Kamera',c:5,col:'var(--red)'},{l:'Video',c:4,col:'var(--blue)'},{l:'Fotoğraf',c:2,col:'var(--orange)'},{l:'API',c:1,col:'var(--green)'}];
+  const sd=document.getElementById('srcDist');
+  if(sd)sd.innerHTML=src.map(s=>`<div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--text2)">${s.l}</span><span style="font-family:var(--mono);color:var(--text3)">${s.c}</span></div><div style="height:5px;background:#eef0f3;border-radius:3px"><div style="height:100%;width:${Math.round(s.c/12*100)}%;background:${s.col};border-radius:3px"></div></div></div>`).join('');
+}
+function renderNotifs(){
+  const nl=document.getElementById('notifList');if(!nl)return;
+  const items=[{type:'fire',title:'🔥 YANGIN TESPİT EDİLDİ!',sub:'Kamera — %91 — #1041',t:'09:32',new:true},{type:'smoke',title:'💨 Duman Tespit Edildi',sub:'Video — %76 — #1040',t:'09:18',new:true},{type:'safe',title:'✅ Sistem Güvenli',sub:'Kamera — %99 — #1037',t:'07:44',new:false}];
+  nl.innerHTML=items.map(item=>`<div style="background:#fff;border:0.5px solid ${item.type==='fire'?'rgba(224,62,45,0.3)':item.type==='smoke'?'rgba(37,99,235,0.3)':'var(--border)'};border-left:3px solid ${item.type==='fire'?'var(--red)':item.type==='smoke'?'var(--blue)':'var(--green)'};border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;gap:14px"><div style="width:36px;height:36px;background:${item.type==='fire'?'var(--red-dim)':item.type==='smoke'?'var(--blue-dim)':'var(--green-dim)'};border-radius:8px;display:flex;align-items:center;justify-content:center"><i class="ti ti-${item.type==='fire'?'flame':item.type==='smoke'?'wind':'circle-check'}" style="color:${item.type==='fire'?'var(--red)':item.type==='smoke'?'var(--blue)':'var(--green)'};font-size:18px"></i></div><div style="flex:1"><div style="font-weight:500;font-size:13px">${item.title}</div><div style="font-size:12px;color:var(--text3)">${item.sub}</div></div><span style="font-size:11px;color:var(--text3);font-family:var(--mono)">${item.t}</span><span class="pill ${item.new?'pill-fire':'pill-safe'}" style="font-size:10px">${item.new?'Yeni':'Okundu'}</span></div>`).join('');
+}
+function renderMsgs(){
+  const ml=document.getElementById('msgList');if(!ml)return;
+  const msgs=[{title:'🔥 YANGIN UYARISI!',body:'Saat: 09:32\nKaynak: Kamera\nGüven: %91\nID: #1041',t:'09:32'},{title:'💨 Duman Tespit Edildi',body:'Saat: 09:18\nKaynak: Video\nGüven: %76\nID: #1040',t:'09:18'}];
+  ml.innerHTML=msgs.map(m=>`<div style="background:#fff;border:0.5px solid var(--border);border-radius:var(--r);padding:14px 16px;display:flex;gap:12px"><div style="width:36px;height:36px;background:#2196F3;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-brand-telegram" style="color:#fff;font-size:16px"></i></div><div style="flex:1"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-weight:500;font-size:13px">FireGuard Bot</span><span style="font-size:11px;color:var(--text3);font-family:var(--mono)">${m.t}</span></div><div style="font-size:13px;background:#f0f4ff;border-radius:8px;padding:10px 12px;white-space:pre-line">${m.body}</div></div></div>`).join('');
+}
+
+// MODAL
+function openModal(id){
+  const r=MOCK.find(x=>x.id===id);if(!r)return;
+  document.getElementById('modalContent').innerHTML=`<div class="modal-row"><span class="key">ID</span><span class="val">#${r.id}</span></div><div class="modal-row"><span class="key">Sınıf</span>${pill(r.sinif)}</div><div class="modal-row"><span class="key">Güven</span><span class="val">${r.guven}%</span></div><div class="modal-row"><span class="key">Kaynak</span><span class="src-tag">${r.kaynak}</span></div><div class="modal-row"><span class="key">Zaman</span><span class="val">${r.zaman} ${r.tarih}</span></div><div class="modal-row"><span class="key">Durum</span>${durumPill(r.durum)}</div>`;
+  document.getElementById('detailModal').classList.add('open');
+}
+function closeModal(){document.getElementById('detailModal').classList.remove('open');}
+function delRow(id){if(confirm(`ID ${id} silinsin mi?`))alert(`ID ${id} silindi (demo)`);}
+
+// ===== FOTO =====
+function onFotoSelected(e){
+  const file=e.target.files[0];if(!file)return;
+  uploadedFoto=file;
+  document.getElementById('fotoPreviewImg').src=URL.createObjectURL(file);
+  document.getElementById('fotoPlaceholder').style.display='none';
+  document.getElementById('fotoPreviewWrap').style.display='block';
+  document.getElementById('fotoResult').innerHTML='';
+}
+function resetFoto(){
+  uploadedFoto=null;
+  document.getElementById('fotoInput').value='';
+  document.getElementById('fotoPlaceholder').style.display='block';
+  document.getElementById('fotoPreviewWrap').style.display='none';
+  document.getElementById('fotoResult').innerHTML='';
+  document.getElementById('fotoResultImg').innerHTML='<span style="color:var(--text3);font-size:12px">Analiz bekleniyor...</span>';
+}
+async function analyzeFoto(){
+  if(!uploadedFoto){alert('Lütfen önce bir fotoğraf seçin!');return;}
+  const res=document.getElementById('fotoResult');
+  res.innerHTML='<div style="text-align:center;padding:14px;color:var(--text3)">Analiz ediliyor...</div>';
+  try{
+    const fd=new FormData();fd.append('image',uploadedFoto,uploadedFoto.name);
+    const r=await fetch(API+'/detect',{method:'POST',headers:{'Authorization':'Bearer '+KEY},body:fd});
+    if(!r.ok)throw new Error('API hatası');
+    const data=await r.json();
+    showFotoResult(data);
+    if(data.sonuc_goruntu) document.getElementById('fotoResultImg').innerHTML=`<img src="data:image/jpeg;base64,${data.sonuc_goruntu}" style="width:100%;border-radius:8px">`;
+    loadAPIData();
+  }catch(e){
+    showFotoResult({tespit_sayisi:1,tespitler:[{sinif:'fire',guven:87.3}],zaman:new Date().toLocaleTimeString()},true);
+  }
+}
+function showFotoResult(data,demo=false){
+  const res=document.getElementById('fotoResult');
+  const hasFire=data.tespitler&&data.tespitler.some(t=>t.sinif==='fire');
+  const hasSmoke=data.tespitler&&data.tespitler.some(t=>t.sinif==='smoke');
+  let alert='';
+  if(hasFire) alert=`<div style="background:var(--red-dim);border:0.5px solid rgba(231,76,60,0.3);border-radius:8px;padding:10px 14px;color:#e87070;font-weight:500;margin-bottom:10px"><i class="ti ti-flame"></i> YANGIN TESPİT EDİLDİ!</div>`;
+  else if(hasSmoke) alert=`<div style="background:var(--blue-dim);border:0.5px solid rgba(52,152,219,0.3);border-radius:8px;padding:10px 14px;color:#70a8e8;font-weight:500;margin-bottom:10px"><i class="ti ti-wind"></i> DUMAN TESPİT EDİLDİ!</div>`;
+  else alert=`<div style="background:var(--green-dim);border:0.5px solid rgba(46,204,113,0.3);border-radius:8px;padding:10px 14px;color:#70e8a8;font-weight:500;margin-bottom:10px"><i class="ti ti-circle-check"></i> Yangın veya duman tespit edilmedi</div>`;
+  const items=(data.tespitler||[]).map(t=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border)"><span>${t.sinif}</span><span style="font-family:var(--mono);color:${t.sinif==='fire'?'var(--red)':'var(--blue)'}">${t.guven.toFixed(1)}%</span></div>`).join('');
+  res.innerHTML=`<div class="result-card">${alert}${items}${demo?'<p style="font-size:11px;color:var(--text3);margin-top:8px">* Demo mod</p>':''}</div>`;
+}
+
+// ===== VIDEO =====
+function onVidSelected(e){
+  const file=e.target.files[0];if(!file)return;
+  videoFile=file;
+  document.getElementById('vidFileName').textContent='✅ '+file.name;
+  document.getElementById('vidPlayer').src=URL.createObjectURL(file);
+  document.getElementById('vidPlayerWrap').style.display='block';
+  document.getElementById('vidUploadZone').style.display='none';
+  document.getElementById('vidResult').innerHTML='';
+}
+function resetVideo(){
+  if(vidInterval){clearInterval(vidInterval);vidInterval=null;}
+  videoFile=null;
+  document.getElementById('vidInput').value='';
+  document.getElementById('vidFileName').textContent='Henüz video seçilmedi';
+  document.getElementById('vidPlayerWrap').style.display='none';
+  document.getElementById('vidUploadZone').style.display='flex';
+  document.getElementById('vidResult').innerHTML='';
+  document.getElementById('vidLabel').style.display='none';
+  document.getElementById('vidLiveIndicator').style.display='none';
+  document.getElementById('vidAnalyzeBtn').innerHTML='<i class="ti ti-player-play"></i> Analizi Başlat';
+  const canvas=document.getElementById('vidCanvas');
+  if(canvas) canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+}
+async function analyzeFrame(){
+  const video=document.getElementById('vidPlayer');
+  if(!video||video.paused||video.ended)return;
+  const canvas=document.getElementById('vidCanvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=video.videoWidth||640;
+  canvas.height=video.videoHeight||360;
+  const tmp=document.createElement('canvas');
+  tmp.width=canvas.width;tmp.height=canvas.height;
+  tmp.getContext('2d').drawImage(video,0,0);
+  tmp.toBlob(async blob=>{
+    if(!blob)return;
+    const fd=new FormData();fd.append('image',blob,'frame.jpg');
+    try{
+      const r=await fetch(API+'/detect',{method:'POST',headers:{'Authorization':'Bearer '+KEY},body:fd});
+      if(!r.ok)return;
+      const data=await r.json();
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      if(data.tespitler&&data.tespitler.length>0){
+        const hasFire=data.tespitler.some(t=>t.sinif==='fire');
+        const maxG=Math.max(...data.tespitler.map(t=>t.guven));
+        data.tespitler.forEach(t=>{
+          if(!t.bbox)return;
+          const color=t.sinif==='fire'?'#ff0000':'#ffff00';
+          const {x1,y1,x2,y2}=t.bbox;
+          ctx.strokeStyle=color;ctx.lineWidth=2;
+          ctx.strokeRect(x1,y1,x2-x1,y2-y1);
+          const lbl=t.sinif+' '+(t.guven/100).toFixed(2);
+          ctx.font='bold 14px monospace';
+          const tw=ctx.measureText(lbl).width;
+          ctx.fillStyle=color;ctx.fillRect(x1,y1>20?y1-20:y1,tw+8,18);
+          ctx.fillStyle='#000';ctx.fillText(lbl,x1+4,y1>20?y1-6:y1+14);
+        });
+        const c=hasFire?'#ef4444':'#eab308',mt=hasFire?'🔥 YANGIN':'💨 DUMAN';
+        document.getElementById('vidLabel').style.display='block';
+        document.getElementById('vidLabelText').innerHTML=`<span style="color:${c}">${mt} — %${maxG.toFixed(1)}</span>`;
+        document.getElementById('vidResult').innerHTML=`<div style="padding:10px 16px;border-radius:8px;background:${hasFire?'#fef2f2':'#eff6ff'};border:1px solid ${hasFire?'#fca5a5':'#93c5fd'}"><span style="font-weight:600;color:${hasFire?'#dc2626':'#2563eb'}">${mt} TESPİT EDİLDİ! — %${maxG.toFixed(1)}</span></div>`;
+      }else{
+        document.getElementById('vidLabel').style.display='none';
+        document.getElementById('vidResult').innerHTML=`<div style="padding:10px 16px;border-radius:8px;background:#f0fdf4;border:1px solid #86efac"><span style="color:#16a34a">✅ Bu karede tehlike yok</span></div>`;
+      }
+    }catch(e){console.warn('Frame hatası:',e);}
+  },'image/jpeg',0.85);
+}
+async function doAnalyzeVideo(){
+  if(!videoFile){alert('Lütfen önce bir video seçin!');return;}
+  const video=document.getElementById('vidPlayer');
+  const btn=document.getElementById('vidAnalyzeBtn');
+  if(vidInterval){
+    clearInterval(vidInterval);vidInterval=null;
+    video.pause();
+    document.getElementById('vidLiveIndicator').style.display='none';
+    btn.innerHTML='<i class="ti ti-player-play"></i> Analizi Başlat';
+    return;
+  }
+  video.play();
+  vidInterval=setInterval(analyzeFrame,500);
+  document.getElementById('vidLiveIndicator').style.display='flex';
+  btn.innerHTML='<i class="ti ti-player-stop"></i> Analizi Durdur';
+  video.onended=()=>{
+    if(vidInterval){clearInterval(vidInterval);vidInterval=null;}
+    document.getElementById('vidLiveIndicator').style.display='none';
+    btn.innerHTML='<i class="ti ti-player-play"></i> Analizi Başlat';
+  };
+}
+
+// ===== CAMERA =====
+async function toggleCamera(){
+  const btn=document.getElementById('camBtn');
+  if(cameraStream){
+    cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;
+    if(camInterval){clearInterval(camInterval);camInterval=null;}
+    document.getElementById('camVideo').style.display='none';
+    document.getElementById('camPlaceholder').style.display='flex';
+    btn.innerHTML='<i class="ti ti-player-play"></i> Kamerayı Başlat';
+  }else{
+    try{
+      cameraStream=await navigator.mediaDevices.getUserMedia({video:true});
+      const v=document.getElementById('camVideo');
+      v.srcObject=cameraStream;v.style.display='block';
+      document.getElementById('camPlaceholder').style.display='none';
+      btn.innerHTML='<i class="ti ti-player-stop"></i> Kamerayı Durdur';
+      camInterval=setInterval(analyzeCamFrame,2000);
+    }catch(e){alert('Kamera açılamadı: '+e.message);}
+  }
+}
+async function analyzeCamFrame(){
+  const v=document.getElementById('camVideo');
+  if(!v||!cameraStream)return;
+  const canvas=document.createElement('canvas');
+  canvas.width=v.videoWidth||640;canvas.height=v.videoHeight||480;
+  canvas.getContext('2d').drawImage(v,0,0);
+  canvas.toBlob(async blob=>{
+    if(!blob)return;
+    const fd=new FormData();fd.append('image',blob,'kamera.jpg');
+    try{
+      const r=await fetch(API+'/detect',{method:'POST',headers:{'Authorization':'Bearer '+KEY},body:fd});
+      if(!r.ok)return;
+      const data=await r.json();
+      const al=document.getElementById('camAlarm');
+      if(!al)return;
+      if(data.tespitler&&data.tespitler.length>0){
+        const hasFire=data.tespitler.some(t=>t.sinif==='fire');
+        const maxG=Math.max(...data.tespitler.map(t=>t.guven));
+        al.innerHTML=hasFire?`<div style="color:var(--red);text-align:center"><i class="ti ti-flame" style="font-size:28px;display:block;margin-bottom:6px"></i><b>YANGIN!</b><div style="font-size:12px">%${maxG.toFixed(1)}</div></div>`:`<div style="color:var(--blue);text-align:center"><i class="ti ti-wind" style="font-size:28px;display:block;margin-bottom:6px"></i><b>DUMAN!</b><div style="font-size:12px">%${maxG.toFixed(1)}</div></div>`;
+      }else{
+        al.innerHTML='<div style="text-align:center"><i class="ti ti-circle-check" style="font-size:24px;color:var(--green);display:block;margin-bottom:6px"></i><span style="font-size:12px;color:var(--green)">Güvenli</span></div>';
+      }
+    }catch(e){}
+  },'image/jpeg',0.85);
+}
+
+// API DATA
+async function loadAPIData(){
+  try{
+    const rs=await fetch(API+'/stats',{headers:{'Authorization':'Bearer '+KEY}});
+    if(rs.ok){
+      const d=await rs.json();
+      document.getElementById('s-fire').textContent=d.yangin||0;
+      document.getElementById('s-smoke').textContent=d.duman||0;
+      const safe=Math.max(0,(d.toplam_tespit||0)-(d.yangin||0)-(d.duman||0));
+      document.getElementById('s-safe').textContent=safe;
+      document.getElementById('s-high').textContent=Math.round((d.toplam_tespit||0)*0.4);
+      document.getElementById('donutTotal').textContent=d.toplam_tespit||0;
+      document.getElementById('lgFire').textContent='Yangın — '+(d.yangin||0);
+      document.getElementById('lgSmoke').textContent='Duman — '+(d.duman||0);
+      document.getElementById('lgSafe').textContent='Güvenli — '+safe;
+    }
+  }catch(e){}
+  try{
+    const rh=await fetch(API+'/history?limit=50',{headers:{'Authorization':'Bearer '+KEY}});
+    if(rh.ok){
+      const d=await rh.json();
+      if(d.kayitlar&&d.kayitlar.length>0){
+        MOCK.length=0;
+        d.kayitlar.forEach(k=>MOCK.push({id:k.id,zaman:k.tarih?k.tarih.split(' ')[1]?.slice(0,5)||'00:00':'00:00',tarih:k.tarih?k.tarih.split(' ')[0]:'',sinif:k.sinif?.includes('fire')?'fire':k.sinif?.includes('smoke')?'smoke':'safe',kaynak:k.kaynak||'api',guven:parseFloat(k.guven)||0,durum:'Tamamlandı'}));
+        renderAll();
+      }
+    }
+  }catch(e){}
+}
+
+// INIT
+function toggleAyarlar(){
+  const el = document.getElementById('fotoAyarlar');
+  if(el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+}
+
+document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+window.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+renderBarChart('barChart');
+</script>
+</body>
+</html>
