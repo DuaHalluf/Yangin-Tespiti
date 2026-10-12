@@ -1,4 +1,4 @@
-[README .md](https://github.com/user-attachments/files/33348981/README.md)
+
 # 🔥 FireWatch
 
 YOLOv8n tabanlı, gerçek zamanlı **yangın ve duman tespit sistemi**. Fotoğraf, video ve canlı kamera görüntüsünü analiz eder; güven skoru %70 ve üzerindeki tespitlerde **Telegram** üzerinden anlık bildirim gönderir.
