@@ -42,7 +42,7 @@ pip install -r requirements.txt
 **Backend (FastAPI):**
 ```bash
 cd backend
-uvicorn main:app --reload
+uvicorn main:app --reload --port 8001
 ```
 
 **Frontend (Streamlit)** — yeni bir terminalde:
