@@ -299,8 +299,8 @@ def tespit_sayfasi():
         video_file = st.file_uploader("Upload a video", type=["mp4","avi","mov"])
         if video_file:
             from ultralytics import YOLO
-            BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
-            MODEL_PATH = os.path.join(BASE_DIR, "weights", "newbest.pt")
+           BASE_DIR   = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+           MODEL_PATH = os.path.join(BASE_DIR, "Trained-Models", "yolo8_best.pt")
 
             @st.cache_resource
             def load_model_vid():
@@ -354,8 +354,8 @@ def tespit_sayfasi():
 
         if st.button("Start Camera", type="primary"):
             from ultralytics import YOLO
-            BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
-            MODEL_PATH = os.path.join(BASE_DIR, "weights", "newbest.pt")
+            BASE_DIR   = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            MODEL_PATH = os.path.join(BASE_DIR, "Trained-Models", "yolo8_best.pt")
 
             @st.cache_resource
             def load_model_cam():
