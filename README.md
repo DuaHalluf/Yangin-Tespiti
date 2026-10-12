@@ -54,7 +54,6 @@ streamlit run app.py
 
 Arayüz `http://localhost:8501` adresinde açılır. API dokümantasyonu: `http://localhost:8000/docs`
 
-Telegram bildirimleri için bot token ve chat ID bilgilerini yapılandırma dosyasına eklemeyi unutmayın.
 
 ## 👩‍💻 Geliştiriciler
 
