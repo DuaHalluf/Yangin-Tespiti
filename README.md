@@ -5,7 +5,6 @@ YOLOv8n tabanlı, gerçek zamanlı **yangın ve duman tespit sistemi**. Fotoğra
 
 > Sakarya Üniversitesi, Bilgisayar Mühendisliği — BSM 498 Bitirme Çalışması (2025–2026)
 
-![FireWatch arayüzü](docs/images/detection.png)
 
 ## ✨ Özellikler
 
