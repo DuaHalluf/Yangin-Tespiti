@@ -34,7 +34,7 @@ YOLOv8n tabanlı, gerçek zamanlı **yangın ve duman tespit sistemi**. Fotoğra
 ##  Kurulum ve Çalıştırma
 
 ```bash
-git clone [https://github.com/DuaHalluf/Yangin-Tespiti.git](https://github.com/DuaHalluf/Yangin-Tespiti.git)
+git clone https://github.com/DuaHalluf/Yangin-Tespiti.git
 cd Yangin-Tespiti
 pip install -r requirements.txt
 ```
