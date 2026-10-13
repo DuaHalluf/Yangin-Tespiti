@@ -36,17 +36,30 @@ YOLOv8n tabanlı, gerçek zamanlı **yangın ve duman tespit sistemi**. Fotoğra
 ```bash
 git clone https://github.com/DuaHalluf/Yangin-Tespiti.git
 cd Yangin-Tespiti
+
+# Sanal ortam oluşturun
+python3 -m venv venv
+
+# Sanal ortamı aktifleştirin (macOS / Linux)
+source venv/bin/activate
+# Windows için: venv\Scripts\activate
+
+# Gerekli bağımlılıkları yükleyin
 pip install -r requirements.txt
 ```
 
 **Backend (FastAPI):**
 ```bash
+cd ~/Yangin-Tespiti
+source venv/bin/activate
 cd backend
 uvicorn main:app --reload --port 8001
 ```
 
 **Frontend (Streamlit)** — yeni bir terminalde:
 ```bash
+cd ~/Yangin-Tespiti
+source venv/bin/activate
 cd frontend
 streamlit run app.py
 ```
